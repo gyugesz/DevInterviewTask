@@ -1,0 +1,159 @@
+<Window x:Class="TodoWpfClient.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:TodoWpfClient.ViewModels"
+        xmlns:conv="clr-namespace:TodoWpfClient.Converters"
+        mc:Ignorable="d"
+        Title="Todo Client" Height="600" Width="980" MinHeight="480" MinWidth="780">
+
+    <!-- Konverter a prioritás szöveggé alakításához -->
+    <Window.Resources>
+        <conv:PriorityToTextConverter x:Key="PriorityToText"
+                                      LowText="Alacsony"
+                                      MediumText="Közepes"
+                                      HighText="Magas" />
+    </Window.Resources>
+
+    <!-- Nézetmodell -->
+    <Window.DataContext>
+        <vm:MainViewModel/>
+    </Window.DataContext>
+
+    <DockPanel LastChildFill="True" Margin="12">
+
+        <!-- Felső eszközsor -->
+        <StackPanel DockPanel.Dock="Top" Orientation="Vertical" Margin="0,0,0,8">
+
+            <!-- API URL + gombok -->
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Text="API Base URL:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBox Grid.Column="1" Text="{Binding BaseUrl, UpdateSourceTrigger=PropertyChanged}" />
+                <Button Grid.Column="2" Content="Mentés" Margin="8,0,0,0"
+                        Command="{Binding SaveBaseUrlCommand}"/>
+                <Button Grid.Column="3" Content="Frissítés" Margin="8,0,0,0"
+                        Command="{Binding RefreshCommand}"/>
+            </Grid>
+
+            <!-- Keresés + rendezés -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBox Grid.Column="0" Height="28" Margin="0,0,8,0"
+                         Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}" />
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <TextBlock Text="Rendezés:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <ComboBox Width="160"
+                        SelectedValue="{Binding SortKey, Mode=TwoWay}"
+                        SelectedValuePath="Content">
+                        <ComboBoxItem Content="Cím (A→Z)"/>
+                        <ComboBoxItem Content="Cím (Z→A)"/>
+                        <ComboBoxItem Content="Létrehozás (új elöl)"/>
+                        <ComboBoxItem Content="Létrehozás (régi elöl)"/>
+                    </ComboBox>
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+
+        <!-- Lista + új tétel + státusz -->
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Lista -->
+            <ListView Grid.Row="0" ItemsSource="{Binding VisibleItems}" Margin="0,0,0,8">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="Cím" Width="260">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Title}" TextWrapping="Wrap"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+
+                        <GridViewColumn Header="Leírás" Width="320">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Description}" TextWrapping="Wrap"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+
+                        <GridViewColumn Header="Prioritás" Width="110">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Priority, Converter={StaticResource PriorityToText}}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+
+                        <GridViewColumn Header="Létrehozva" Width="150"
+                                        DisplayMemberBinding="{Binding CreatedAt, StringFormat=yyyy-MM-dd HH\\:mm}"/>
+
+                        <GridViewColumn Header="Művelet" Width="90">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Content="Kész" Padding="8,4"
+                                            Command="{Binding DataContext.CompleteCommand, RelativeSource={RelativeSource AncestorType=ListView}}"
+                                            CommandParameter="{Binding}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+
+            <!-- Új tétel megadása -->
+            <Grid Grid.Row="1" Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*"/>
+                    <!-- Cím -->
+                    <ColumnDefinition Width="3*"/>
+                    <!-- Leírás -->
+                    <ColumnDefinition Width="140"/>
+                    <!-- Prioritás -->
+                    <ColumnDefinition Width="Auto"/>
+                    <!-- Gomb -->
+                </Grid.ColumnDefinitions>
+
+                <TextBox Grid.Column="0" Height="32" Margin="0,0,8,0"
+                         Text="{Binding NewTitle, UpdateSourceTrigger=PropertyChanged}" />
+
+                <TextBox Grid.Column="1" Height="32" Margin="0,0,8,0"
+                         Text="{Binding NewDescription, UpdateSourceTrigger=PropertyChanged}" />
+
+                <ComboBox Grid.Column="2" Height="32" Margin="0,0,8,0"
+                          SelectedValuePath="Tag"
+                          SelectedValue="{Binding NewPriority, Mode=TwoWay}">
+                    <ComboBoxItem Content="Alacsony" Tag="1"/>
+                    <ComboBoxItem Content="Közepes"  Tag="2"/>
+                    <ComboBoxItem Content="Magas"    Tag="3"/>
+                </ComboBox>
+
+                <Button Grid.Column="3" Content="Hozzáadás" Padding="12,6"
+                        Command="{Binding AddCommand}"/>
+            </Grid>
+
+            <!-- Státusz -->
+            <StatusBar Grid.Row="2">
+                <TextBlock Text="{Binding Status}"/>
+            </StatusBar>
+        </Grid>
+    </DockPanel>
+</Window>
